@@ -3,14 +3,41 @@ package memz
 import "fmt"
 
 var g_debug bool = false
-
 var g_TEST_DEBUG bool = false
 
-const GAP = -2
+//var GAP int = -2
+var GAP int
 
 func _score(x,y byte) int {
   if x==y { return 0 }
   return -3
+}
+
+var __score [][]int
+var Score [][]int
+
+func init() {
+
+  __score = make([][]int, 256)
+  for i:=0; i<256; i++ {
+    __score[i] = make([]int, 256)
+    for j:=0; j<256; j++ {
+      __score[i][j] = -3
+      if i==j { __score[i][j] = 0 }
+    }
+  }
+
+  Score = make([][]int, 256)
+  for i:=0; i<256; i++ {
+    Score[i] = make([]int, 256)
+    for j:=0; j<256; j++ {
+      Score[i][j] = -3
+      if i==j { Score[i][j] = 0 }
+    }
+  }
+
+  GAP = -2
+
 }
 
 // Calculate the score column from both string
@@ -31,6 +58,61 @@ func _score(x,y byte) int {
 // column.
 //
 func da_lin_suffix(x,y []byte, score_col []int) {
+  var x_pos int
+  var y_pos int
+  var mscore int
+  var tscore []int
+
+  n := len(x)+2
+  m := len(y)+2
+
+  score0 := make([]int, m)
+  score1 := make([]int, m)
+  for i:=0; i<m; i++ { score0[i] = GAP*((m-1) - i) }
+
+  // We've filled in n-1, start at n-2 and go to 0.
+  //
+  for col:=n-2; col>0; col-- {
+    score1[m-1] = GAP*((n-1)-col)
+
+    x_pos = col-1
+    //tscore = __score[x[x_pos]]
+    tscore = Score[x[x_pos]]
+
+    // We've filled in the last row entry, start at m-1 and
+    // go to 0.
+    //
+    for row:=m-2; row>=0; row-- {
+
+      y_pos = row-1
+
+      if col>0 && row>0 {
+        mscore = tscore[y[y_pos]] + score0[row+1]
+
+        if score0[row]   + GAP > mscore { mscore = score0[row]   + GAP }
+        if score1[row+1] + GAP > mscore { mscore = score1[row+1] + GAP }
+
+        score1[row] = mscore
+      } else {
+        mscore = score0[row+1]
+        if score0[row]   + GAP > mscore { mscore = score0[row]   + GAP }
+        if score1[row+1] + GAP > mscore { mscore = score1[row+1] + GAP }
+
+        score1[row] = mscore
+      }
+
+    }
+
+    score0,score1 = score1,score0
+  }
+
+  for i:=0; i<m; i++ {
+    score_col[i] = score0[i]
+  }
+
+}
+
+func da_lin_suffix_old2(x,y []byte, score_col []int) {
   score := [2][]int{}
 
   n := len(x)+2
@@ -58,7 +140,11 @@ func da_lin_suffix(x,y []byte, score_col []int) {
       y_pos := row-1
 
       if col>0 && row>0 {
-        m := _score(x[x_pos], y[y_pos]) + score[cur_c][row+1]
+
+        //m := _score(x[x_pos], y[y_pos]) + score[cur_c][row+1]
+        m := score[cur_c][row+1]
+        if x[x_pos] != y[y_pos] { m-=3 }
+
         if score[cur_c][row]   + GAP > m { m = score[cur_c][row]   + GAP }
         if score[nex_c][row+1] + GAP > m { m = score[nex_c][row+1] + GAP }
 
@@ -128,6 +214,45 @@ func da_lin_suffix_old(x,y []byte, score_col []int) {
 
 
 func da_lin(x,y []byte, score_col []int) {
+  var x_pos int
+  var y_pos int
+  var tscore []int
+  var mscore int
+
+  n := len(x)+1
+  m := len(y)+1
+
+  score0 := make([]int, m)
+  score1 := make([]int, m)
+  for i:=0; i<m; i++ { score0[i] = i*GAP }
+
+  for col:=1; col<n; col++ {
+    score1[0] = GAP*col
+
+    x_pos = col-1
+    //tscore = __score[x[x_pos]]
+    tscore = Score[x[x_pos]]
+    for row:=1; row<m; row++ {
+      y_pos = row-1
+
+      mscore = tscore[y[y_pos]] + score0[row-1]
+
+      if score0[row]   + GAP > mscore { mscore = score0[row]   + GAP }
+      if score1[row-1] + GAP > mscore { mscore = score1[row-1] + GAP }
+
+      score1[row] = mscore
+    }
+
+    score0,score1 = score1,score0
+  }
+
+  for i:=0; i<m; i++ {
+    score_col[i] = score0[i]
+  }
+
+}
+
+func da_lin_old(x,y []byte, score_col []int) {
   score := [2][]int{}
 
   n := len(x)+1
@@ -147,7 +272,11 @@ func da_lin(x,y []byte, score_col []int) {
       x_pos := col-1
       y_pos := row-1
 
-      m := _score(x[x_pos], y[y_pos]) + score[cur_c][row-1]
+      //m := _score(x[x_pos], y[y_pos]) + score[cur_c][row-1]
+      m := score[cur_c][row-1]
+      if x[x_pos] != y[y_pos] { m-=3 }
+
+
       if score[cur_c][row]   + GAP > m { m = score[cur_c][row]   + GAP }
       if score[nex_c][row-1] + GAP > m { m = score[nex_c][row-1] + GAP }
 
@@ -461,7 +590,8 @@ func Simp_b(x,y []byte, basec, baser int) ([]int, int) {
     for c:=1; c<n_c; c++ {
       xpos := c-1
       ypos := r-1
-      s := _score(x[xpos],y[ypos]) + M[r-1][c-1]
+      //s := _score(x[xpos],y[ypos]) + M[r-1][c-1]
+      s := Score[x[xpos]][y[ypos]] + M[r-1][c-1]
       if M[r-1][c] + GAP > s { s = M[r-1][c] + GAP }
       if M[r][c-1] + GAP > s { s = M[r][c-1] + GAP }
       M[r][c] = s
@@ -472,7 +602,8 @@ func Simp_b(x,y []byte, basec, baser int) ([]int, int) {
 
   //DEBUG
   if g_TEST_DEBUG {
-    debug_print_simp(x,y, M)
+    //debug_print_simp(x,y, M)
+    debug_print_simp_p(x,y, M)
   }
 
 
@@ -490,7 +621,8 @@ func Simp_b(x,y []byte, basec, baser int) ([]int, int) {
     if cur_c==0 { cur_r-- ; continue }
     if cur_r==0 { cur_c-- ; continue }
 
-    v_0_0 := _score(x[cur_c-1], y[cur_r-1]) + M[cur_r-1][cur_c-1]
+    //v_0_0 := _score(x[cur_c-1], y[cur_r-1]) + M[cur_r-1][cur_c-1]
+    v_0_0 := Score[x[cur_c-1]][y[cur_r-1]] + M[cur_r-1][cur_c-1]
     v_1_0 := GAP + M[cur_r-1][cur_c]
     v_0_1 := GAP + M[cur_r][cur_c-1]
 
@@ -581,6 +713,60 @@ func Simp_b_old(x,y []byte, basec, baser int) ([]int, int) {
   return path,sc
 }
 
+
+func debug_print_simp_p(x,y []byte, M [][]int) {
+  n := len(x)+1
+  m := len(y)+1
+
+  fmt.Printf("     ")
+  for c:=0; c<n; c++ {
+    if c==0 { fmt.Printf("     ")
+    } else {
+      fmt.Printf(" %4d", c)
+    }
+  }
+  fmt.Printf("\n")
+
+  fmt.Printf("     ")
+  for c:=0; c<n; c++ {
+    if c==0 { fmt.Printf(" %4s", "-")
+    } else {
+      fmt.Printf(" %4c", x[c-1])
+    }
+  }
+  fmt.Printf("\n")
+
+  for r:=0; r<m; r++ {
+
+    if r==0 {
+      fmt.Printf(" %4c", '-')
+    } else {
+      fmt.Printf("%2d", r)
+      fmt.Printf("  %c", y[r-1])
+    }
+    for c:=0; c<n; c++ {
+
+      x_pos := c-1
+      y_pos := r-1
+
+      ch := ' '
+      if r>0 && M[r-1][c] + GAP == M[r][c] {
+        ch = '|'
+      }
+      if c>0 && M[r][c-1] + GAP == M[r][c] {
+        ch = '_'
+      }
+      if r>0 && c>0 && M[r-1][c-1] + _score(x[x_pos],y[y_pos]) == M[r][c] {
+        ch = '\\'
+      }
+
+      fmt.Printf(" %c%3d", ch, M[r][c])
+    }
+    fmt.Printf("\n")
+
+  }
+  fmt.Printf("\n")
+}
 
 func debug_print_simp(x,y []byte, M [][]int) {
   n := len(x)+1
