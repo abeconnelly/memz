@@ -2,10 +2,6 @@ package memz
 
 import "fmt"
 
-var g_debug bool = false
-var g_TEST_DEBUG bool = false
-
-//var GAP int = -2
 var GAP int
 
 func _score(x,y byte) int {
@@ -112,106 +108,6 @@ func da_lin_suffix(x,y []byte, score_col []int) {
 
 }
 
-func da_lin_suffix_old2(x,y []byte, score_col []int) {
-  score := [2][]int{}
-
-  n := len(x)+2
-  m := len(y)+2
-
-  score[0] = make([]int, m)
-  score[1] = make([]int, m)
-  for i:=0; i<m; i++ { score[0][i] = GAP*((m-1) - i) }
-
-  cur_c := 0
-  nex_c := 1
-
-  // We've filled in n-1, start at n-2 and go to 0.
-  //
-  //for col:=n-2; col>=0; col-- {
-  for col:=n-2; col>0; col-- {
-    score[nex_c][m-1] = GAP*((n-1)-col)
-
-    // We've filled in the last row entry, start at m-1 and
-    // go to 0.
-    //
-    for row:=m-2; row>=0; row-- {
-
-      x_pos := col-1
-      y_pos := row-1
-
-      if col>0 && row>0 {
-
-        //m := _score(x[x_pos], y[y_pos]) + score[cur_c][row+1]
-        m := score[cur_c][row+1]
-        if x[x_pos] != y[y_pos] { m-=3 }
-
-        if score[cur_c][row]   + GAP > m { m = score[cur_c][row]   + GAP }
-        if score[nex_c][row+1] + GAP > m { m = score[nex_c][row+1] + GAP }
-
-        score[nex_c][row] = m
-      } else {
-        m := score[cur_c][row+1]
-        if score[cur_c][row]   + GAP > m { m = score[cur_c][row]   + GAP }
-        if score[nex_c][row+1] + GAP > m { m = score[nex_c][row+1] + GAP }
-
-        score[nex_c][row] = m
-      }
-
-    }
-
-    cur_c,nex_c = nex_c, cur_c
-  }
-
-  for i:=0; i<m; i++ {
-    score_col[i] = score[cur_c][i]
-  }
-
-}
-
-
-func da_lin_suffix_old(x,y []byte, score_col []int) {
-  score := [2][]int{}
-
-  n := len(x)+1
-  m := len(y)+1
-
-  score[0] = make([]int, m)
-  score[1] = make([]int, m)
-  for i:=0; i<m; i++ { score[0][i] = GAP*((m-1) - i) }
-
-  cur_c := 0
-  nex_c := 1
-
-  // We've filled in n-1, start at n-2 and go to 0.
-  //
-  for col:=n-2; col>=0; col-- {
-    score[nex_c][m-1] = GAP*((n-1)-col)
-
-    // We've filled in the last row entry, start at m-1 and
-    // go to 0.
-    //
-    for row:=m-2; row>=0; row-- {
-
-      x_pos := col
-      y_pos := row
-
-      m := _score(x[x_pos], y[y_pos]) + score[cur_c][row+1]
-      if score[cur_c][row]   + GAP > m { m = score[cur_c][row]   + GAP }
-      if score[nex_c][row+1] + GAP > m { m = score[nex_c][row+1] + GAP }
-
-      score[nex_c][row] = m
-
-    }
-
-    cur_c,nex_c = nex_c, cur_c
-  }
-
-  for i:=0; i<m; i++ {
-    score_col[i] = score[cur_c][i]
-  }
-
-}
-
 
 func da_lin(x,y []byte, score_col []int) {
   var x_pos int
@@ -248,47 +144,6 @@ func da_lin(x,y []byte, score_col []int) {
 
   for i:=0; i<m; i++ {
     score_col[i] = score0[i]
-  }
-
-}
-
-func da_lin_old(x,y []byte, score_col []int) {
-  score := [2][]int{}
-
-  n := len(x)+1
-  m := len(y)+1
-
-  score[0] = make([]int, m)
-  score[1] = make([]int, m)
-  for i:=0; i<m; i++ { score[0][i] = i*GAP }
-
-  cur_c := 0
-  nex_c := 1
-
-  for col:=1; col<n; col++ {
-    score[nex_c][0] = GAP*col
-
-    for row:=1; row<m; row++ {
-      x_pos := col-1
-      y_pos := row-1
-
-      //m := _score(x[x_pos], y[y_pos]) + score[cur_c][row-1]
-      m := score[cur_c][row-1]
-      if x[x_pos] != y[y_pos] { m-=3 }
-
-
-      if score[cur_c][row]   + GAP > m { m = score[cur_c][row]   + GAP }
-      if score[nex_c][row-1] + GAP > m { m = score[nex_c][row-1] + GAP }
-
-      score[nex_c][row] = m
-
-    }
-
-    cur_c,nex_c = nex_c, cur_c
-  }
-
-  for i:=0; i<m; i++ {
-    score_col[i] = score[cur_c][i]
   }
 
 }
@@ -375,12 +230,6 @@ func HirschbergRecur(x,y []byte, basec,baser int) ([]int, int) {
   da_lin(x[:n2],y,y_pfx)
   da_lin_suffix(x[n2:],y,y_sfx)
 
-  //DEBUG
-  if g_TEST_DEBUG {
-    Simp_b(x,y,0,0)
-    SimpRev(x,y)
-  }
-
   // Find the y position with the best cost.
   //
   best_cost := 0
@@ -402,14 +251,6 @@ func HirschbergRecur(x,y []byte, basec,baser int) ([]int, int) {
   //x_path_pos,y_path_pos := n2,best_q+1
   x_path_pos,y_path_pos := n2,best_q
 
-  //DEBUG
-  if g_TEST_DEBUG {
-    fmt.Printf("%v\n%v\n", y_pfx, y_sfx)
-    fmt.Printf("recur left: xpos %d, x %s:%s, ypos %d, y %s:%s\n",
-      x_path_pos, x[:x_path_pos], x[x_path_pos:],
-      y_path_pos, y[:y_path_pos], y[y_path_pos:])
-  }
-
   // left
   //
   tpathl,scl := HirschbergRecur(x[:x_path_pos],y[:y_path_pos], basec,baser)
@@ -425,89 +266,6 @@ func HirschbergRecur(x,y []byte, basec,baser int) ([]int, int) {
 
 }
 
-
-func HirschbergRecur_old(x,y []byte, basec,baser int) ([]int, int) {
-
-  path := []int{}
-
-  n_c := len(x)
-  m_r := len(y)
-
-  // The two column score vectors, one
-  // more than length of y to include
-  // gap.
-  //
-  y_pfx := make([]int, m_r+1)
-  y_sfx := make([]int, m_r+2)
-
-  // Base case, apply vanillla dynamic
-  // programming.
-  //
-  if n_c<=2 || m_r<=2 {
-    tpath,sc := Simp_b(x,y,basec,baser)
-    path = append(path, tpath...)
-    return path,sc
-  }
-
-  n2 := n_c/2
-
-  // Find the two score vectors for the upper
-  // left and lower right blocks.
-  // They need to overlap in one column.
-  //
-
-  da_lin(x[:n2],y,y_pfx)
-  da_lin_suffix(x[n2:],y,y_sfx)
-
-  //DEBUG
-  if g_TEST_DEBUG {
-    Simp_b(x,y,0,0)
-    SimpRev(x,y)
-  }
-
-  // Find the y position with the best cost.
-  //
-  best_cost := 0
-  best_q := 0
-  for q:=0; q<m_r; q++ {
-    cost := y_pfx[q] + y_sfx[q+1]
-    if q==0 {
-      best_cost = cost
-      best_q = q
-      continue
-    }
-
-    if cost > best_cost {
-      best_cost = cost
-      best_q = q
-    }
-  }
-
-  x_path_pos,y_path_pos := n2,best_q+1
-  //x_path_pos,y_path_pos := n2,best_q
-
-  //DEBUG
-  if g_TEST_DEBUG {
-    fmt.Printf("%v\n%v\n", y_pfx, y_sfx)
-    fmt.Printf("recur left: xpos %d, x %s:%s, ypos %d, y %s:%s\n",
-      x_path_pos, x[:x_path_pos], x[x_path_pos:],
-      y_path_pos, y[:y_path_pos], y[y_path_pos:])
-  }
-
-  // left
-  //
-  tpathl,scl := HirschbergRecur(x[:x_path_pos],y[:y_path_pos], basec,baser)
-
-  // right
-  //
-  tpathr,scr := HirschbergRecur(x[x_path_pos:],y[y_path_pos:], basec+x_path_pos,baser+y_path_pos)
-
-  path = append(path, tpathl...)
-  path = append(path, tpathr...)
-
-  return path,scl+scr
-
-}
 
 func debug_matrix(x,y []byte) {
   // print out debugging matrix
@@ -528,42 +286,6 @@ func debug_matrix(x,y []byte) {
     fmt.Printf("%2d %c\n", i+1, x[i])
   }
   fmt.Printf("\n")
-}
-
-func t0() {
-
-  x := []byte("abcdefgh")
-  y := []byte("abcDefgh")
-
-
-  //TESTING
-
-  debug_matrix(x,y)
-
-  y_pfx := make([]int, len(y)+1) ; _ = y_pfx
-  y_sfx := make([]int, len(y)+1) ; _ = y_sfx
-
-
-  n2 := len(x)/2
-
-  da_lin(x[:n2], y, y_pfx)
-  fmt.Printf("y_pfx: %v\n", y_pfx)
-  fmt.Printf("   ")
-  for i:=1; i<len(y_pfx); i++ { fmt.Printf("  %c", y[i-1]) } ; fmt.Printf("\n")
-  for i:=0; i<len(y_pfx); i++ { fmt.Printf(" %2d", i) } ;  fmt.Printf("\n")
-  for i:=0; i<len(y_pfx); i++ { fmt.Printf(" %2d", y_pfx[i]) } ; fmt.Printf("\n")
-  fmt.Printf("\n")
-
-
-  da_lin_suffix(x[n2:], y, y_sfx)
-  fmt.Printf("y_sfx: %v\n", y_sfx)
-  fmt.Printf("   ")
-  for i:=1; i<len(y_sfx); i++ { fmt.Printf("  %c", y[i-1]) } ; fmt.Printf("\n")
-  for i:=0; i<len(y_sfx); i++ { fmt.Printf(" %2d", i) } ;  fmt.Printf("\n")
-  for i:=0; i<len(y_sfx); i++ { fmt.Printf(" %2d", y_sfx[i]) } ; fmt.Printf("\n")
-  fmt.Printf("\n")
-
-
 }
 
 // Simple dynamic programming.
@@ -599,12 +321,6 @@ func Simp_b(x,y []byte, basec, baser int) ([]int, int) {
   }
 
   sc := M[m_r-1][n_c-1]
-
-  //DEBUG
-  if g_TEST_DEBUG {
-    //debug_print_simp(x,y, M)
-    debug_print_simp_p(x,y, M)
-  }
 
 
   // Back track to find path.  Assume lower right hand
@@ -671,12 +387,6 @@ func Simp_b_old(x,y []byte, basec, baser int) ([]int, int) {
   }
 
   sc := M[m_r-1][n_c-1]
-
-  //DEBUG
-  if g_TEST_DEBUG {
-    debug_print_simp(x,y, M)
-  }
-
 
   // Back track to find path.  Assume lower right hand
   // corner entry as starting point.
@@ -959,29 +669,6 @@ func SimpRev(x,y []byte) {
   }
 
   debug_print_simp_rev2(x,y,M)
-}
-
-func SimpRev_old(x,y []byte) {
-  n := len(x)+1
-  m := len(y)+1
-
-  M := make([][]int, m)
-  for i:=0; i<m; i++ { M[i] = make([]int, n) }
-  for i:=0; i<n; i++ { M[m-1][n-1-i] = i*GAP }
-  for i:=0; i<m; i++ { M[m-1-i][n-1] = i*GAP }
-
-  for r:=m-2; r>=0; r-- {
-    for c:=n-2; c>=0; c-- {
-      xpos := c
-      ypos := r
-      s := _score(x[xpos],y[ypos]) + M[r+1][c+1]
-      if M[r+1][c] + GAP > s { s = M[r+1][c] + GAP }
-      if M[r][c+1] + GAP > s { s = M[r][c+1] + GAP }
-      M[r][c] = s
-    }
-  }
-
-  debug_print_simp_rev(x,y,M)
 }
 
 // Mostly a wrapper for HirschbergRecur.
